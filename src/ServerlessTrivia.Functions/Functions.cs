@@ -20,6 +20,8 @@ namespace ServerlessTrivia
 {
     public static class Functions
     {
+        private const int secondsBetweenClues = 20;
+
         [FunctionName(nameof(TriviaOrchestrator))]
         public static async Task TriviaOrchestrator(
             [OrchestrationTrigger] DurableOrchestrationContext context, ILogger logger)
@@ -27,15 +29,18 @@ namespace ServerlessTrivia
             Clue previousClue = null;
             try
             {
-                var input = context.GetInput<int>();
+                previousClue = context.GetInput<Clue>();
                 var outputs = new List<string>();
 
-                var clue = await context.CallActivityAsync<Clue>(nameof(GetClue), null);
+                var nextRun = context.CurrentUtcDateTime.AddSeconds(secondsBetweenClues);
+
+                var clue = await context.CallActivityAsync<Clue>(nameof(GetAndSendClue), (previousClue, nextRun));
                 logger.LogInformation(JsonConvert.SerializeObject(clue));
 
-                DateTime nextRun = context.CurrentUtcDateTime.AddSeconds(15);
                 logger.LogInformation($"*** Next run: {nextRun.ToString()}");
                 await context.CreateTimer(nextRun, CancellationToken.None);
+
+                previousClue = clue;
             }
             catch (Exception ex)
             {
@@ -47,10 +52,11 @@ namespace ServerlessTrivia
             }
         }
 
-        [FunctionName(nameof(GetClue))]
-        public static async Task<Clue> GetClue(
+        [FunctionName(nameof(GetAndSendClue))]
+        public static async Task<Clue> GetAndSendClue(
             [ActivityTrigger] DurableActivityContext context,
             [Table("clues")] IAsyncCollector<Clue> clues,
+            [SignalR(HubName = "trivia")] IAsyncCollector<SignalRMessage> signalRMessages,
             ILogger logger)
         {
             logger.LogInformation($"*** Getting clue...");
@@ -58,8 +64,30 @@ namespace ServerlessTrivia
             var responseJson = await client.GetStringAsync("http://jservice.io/api/random");
             var response = JsonConvert.DeserializeObject<IEnumerable<JServiceResponse>>(responseJson);
 
+            var (previousClue, nextRun) = context.GetInput<(Clue, DateTime)>();
+
             var clue = response.First().ToClue();
             await clues.AddAsync(clue);
+
+            var now = DateTime.UtcNow;
+            var timeRemaining = nextRun > now ? nextRun.Subtract(now) : TimeSpan.FromSeconds(0);
+
+            await signalRMessages.AddAsync(new SignalRMessage
+            {
+                Target = "newClue",
+                Arguments = new object[]
+                {
+                    new {
+                        previousClue = previousClue,
+                        nextClue = new {
+                            clueId = clue.PartitionKey,
+                            question = clue.Question,
+                            categoryTitle = clue.CategoryTitle,
+                            estimatedTimeRemaining = timeRemaining.TotalMilliseconds
+                        }
+                    }
+                }
+            });
             return clue;
         }
 
@@ -90,20 +118,6 @@ namespace ServerlessTrivia
             return Regex.Replace(input, @"(\b(a|an|the|of)\b|[^a-zA-Z0-9]+)", "", RegexOptions.IgnoreCase).ToLowerInvariant();
         }
 
-        [FunctionName("HttpStart")]
-        public static async Task<HttpResponseMessage> HttpStart(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")]HttpRequestMessage req,
-            [OrchestrationClient]DurableOrchestrationClient starter,
-            TraceWriter log)
-        {
-            // Function input comes from the request content.
-            string instanceId = await starter.StartNewAsync(nameof(TriviaOrchestrator), null);
-
-            log.Info($"Started orchestration with ID = '{instanceId}'.");
-
-            return starter.CreateCheckStatusResponse(req, instanceId);
-        }
-
         [FunctionName("HttpStartSingle")]
         public static async Task<HttpResponseMessage> RunSingle(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestMessage req,
@@ -130,7 +144,7 @@ namespace ServerlessTrivia
 
         [FunctionName(nameof(SignalRInfo))]
         public static IActionResult SignalRInfo(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get")]HttpRequestMessage req, 
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequestMessage req, 
             [SignalRConnectionInfo(HubName = "trivia")]AzureSignalRConnectionInfo info, 
             ILogger logger)
         {

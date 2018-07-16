@@ -1,0 +1,147 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Serverless Trivia</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"
+    integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
+    crossorigin="anonymous" />
+</head>
+
+<body>
+  <div id="app" class="container">
+    <h1>Serverless Trivia</h1>
+    <hr />
+    <form v-on:submit.prevent="submitGuess">
+      <input type="text" v-model="guessText" placeholder="" 
+        :disabled="!currentClue.clueId || nextClueSecondsRemaining <= 0" class="form-control form-control-lg" />
+      <div v-if="nextClueSecondsRemaining > 0">
+        Estimated time until next clue: {{ nextClueSecondsRemaining }}s
+      </div>
+      <div v-if="nextClueSecondsRemaining <= 0">
+        Next clue coming soon!
+      </div>
+    </form>
+    <div v-if="currentClue.clueId">
+      <div>
+        <h3>Current</h3>
+        <b>{{ currentClue.categoryTitle }}</b><br />
+        {{ currentClue.question }}
+      </div>
+
+      <div v-if="previousClue.clueId">
+        <hr />
+        <h3>Previous</h3>
+        <b>{{ previousClue.categoryTitle }}</b><br />
+        {{ previousClue.question }}<br />
+        {{ previousClue.answer }}
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+  <script src="https://unpkg.com/@aspnet/signalr@1.0.0/dist/browser/signalr.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/node-uuid/1.4.8/uuid.js"></script>
+
+  <script>
+    const apiBaseUrl = 'http://localhost:7071'
+    const axiosConfig = {}
+    const sessionId = uuid.v4()
+
+    const data = {
+      guessText: '',
+      currentClue: {},
+      previousClue: {},
+      nextClueTime: new Date(),
+      nextClueSecondsRemaining: 0
+    }
+
+    const app = new Vue({
+      el: '#app',
+      data: data,
+      methods: {
+        submitGuess: function () {
+          const guess = {
+            sessionId: sessionId,
+            clueId: this.currentClue.clueId,
+            value: this.guessText
+          }
+          return axios.post(`${apiBaseUrl}/api/SubmitGuess`, guess, axiosConfig)
+            .then(function(resp) { 
+              const result = resp.data 
+              data.guessText = ''
+              alert(result.isCorrect ? 'Correct!' : 'Incorrect!')
+            })
+            .catch(function() { alert('Error submitting guess') })
+        }
+      }
+    })
+
+    getConnectionInfo().then(function(info) {
+      let accessKey = info.accessKey
+      const options = {
+        accessTokenFactory: function() {
+          if (accessKey) {
+            const _accessKey = accessKey
+            accessKey = null
+            return _accessKey
+          } else {
+            return getConnectionInfo().then(function(info) {
+              return info.accessKey
+            })
+          }
+        }
+      }
+
+      const connection = new signalR.HubConnectionBuilder()
+        .withUrl(info.endpoint, options)
+        .build()
+
+      connection.on('newClue', newClue)
+      connection.onclose(function() {
+        console.log('disconnected')
+        setTimeout(function() { startConnection(connection) }, 2000)
+      })
+
+      startConnection(connection)
+      
+    }).catch(console.error)
+
+    function newClue(clue) {
+      data.currentClue = clue.nextClue
+      data.previousClue = clue.previousClue
+      data.previousClue.clueId = data.previousClue.PartitionKey // TODO: yuck
+      const now = new Date()
+      data.nextClueTime = new Date(now.getTime() + (data.currentClue.estimatedTimeRemaining || 0))
+      console.log(JSON.stringify(clue, null, 2))
+    }
+    
+    function startConnection(connection) {
+      console.log('connecting...')
+      connection.start()
+        .then(function() { console.log('connected!') })
+        .catch(function(err) {
+          console.error(err)
+          setTimeout(function() { startConnection(connection) }, 2000)
+        })
+    }
+
+    function getConnectionInfo() {
+      return axios.post(`${apiBaseUrl}/api/SignalRInfo`, null, axiosConfig)
+        .then(function(resp) { return resp.data })
+        .catch(function() { return {} })
+    }
+
+    function calculateTimeRemaining() {
+      const now = new Date()
+      const diff =  Math.round((data.nextClueTime.getTime() - now.getTime()) / 1000.0)
+      data.nextClueSecondsRemaining = diff > 0 ? diff : 0
+    }
+    setInterval(calculateTimeRemaining, 200)
+  </script>
+</body>
+
+</html>
