@@ -14,29 +14,36 @@
   <div id="app" class="container">
     <h1>Serverless Trivia</h1>
     <hr />
-    <form v-on:submit.prevent="submitGuess">
-      <input type="text" v-model="guessText" placeholder="" 
-        :disabled="!currentClue.clueId || nextClueSecondsRemaining <= 0" class="form-control form-control-lg" />
+    <div class="content">
       <div v-if="nextClueSecondsRemaining > 0">
         Estimated time until next clue: {{ nextClueSecondsRemaining }}s
       </div>
       <div v-if="nextClueSecondsRemaining <= 0">
         Next clue coming soon!
       </div>
-    </form>
-    <div v-if="currentClue.clueId">
-      <div>
-        <h3>Current</h3>
-        <b>{{ currentClue.categoryTitle }}</b><br />
-        {{ currentClue.question }}
-      </div>
+    </div>
 
-      <div v-if="previousClue.clueId">
-        <hr />
-        <h3>Previous</h3>
-        <b>{{ previousClue.categoryTitle }}</b><br />
-        {{ previousClue.question }}<br />
-        {{ previousClue.answer }}
+    <div v-if="currentClue.clueId">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{ currentClue.categoryTitle }}</h5>
+          <p class="card-text">{{ currentClue.question }}</p>
+          <form v-on:submit.prevent="submitGuess">
+            <input type="text" v-model="guessText" placeholder="" 
+              :disabled="!currentClue.clueId || nextClueSecondsRemaining <= 0" class="form-control" />
+          </form>
+        </div>
+      </div>
+      <br />
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{ previousClue.categoryTitle }}</h5>
+          <p class="card-text">{{ previousClue.question }}</p>
+          <form>
+            <input type="text" v-model="previousClue.guess" placeholder="" :disabled="true" class="form-control" />
+          </form>
+          <p>Correct answer: {{  previousClue.answer }}</p>
+        </div>
       </div>
     </div>
   </div>

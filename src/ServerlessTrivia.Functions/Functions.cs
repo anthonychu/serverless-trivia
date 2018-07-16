@@ -108,7 +108,7 @@ namespace ServerlessTrivia
                 ClueId = clue.PartitionKey,
                 Guess = guess.Value,
                 CorrectAnswer = clue.Answer,
-                IsCorrect = similarity > 0.8,
+                IsCorrect = similarity > 0.75,
                 Similarity = similarity
             };
         }
