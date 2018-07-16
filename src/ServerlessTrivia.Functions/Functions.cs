@@ -95,22 +95,36 @@ namespace ServerlessTrivia
         public static async Task<object> SubmitGuess(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")]Guess guess,
             [Table("clues", "{clueId}", Clue.RowKeyValue)] Clue clue,
-            [Table("guesses")] IAsyncCollector<Guess> guesses)
+            [Table("guesses")] IAsyncCollector<Guess> guesses,
+            [SignalR(HubName = "trivia")] IAsyncCollector<SignalRMessage> signalRMessages)
         {
             var l = new NormalizedLevenshtein();
             var similarity = l.Similarity(NormalizeString(clue.Answer), NormalizeString(guess.Value));
 
             await guesses.AddAsync(guess);
 
-            return new
+            var result = new
             {
                 guess.SessionId,
                 ClueId = clue.PartitionKey,
                 Guess = guess.Value,
-                CorrectAnswer = clue.Answer,
                 IsCorrect = similarity > 0.75,
                 Similarity = similarity
             };
+
+            await signalRMessages.AddAsync(new SignalRMessage
+            {
+                Target = "newGuess",
+                Arguments = new object[]
+                {
+                    new {
+                        clueId = result.ClueId,
+                        isCorrect = result.IsCorrect
+                    }
+                }
+            });
+
+            return result;
         }
 
         private static string NormalizeString(string input)

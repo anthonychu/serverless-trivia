@@ -29,7 +29,7 @@
     .fa-angle-right, .fa-circle-notch {
       color: #999;
     }
-    .fas {
+    .fas.fa-lg {
       width: 24px;
     }
   </style>
@@ -67,6 +67,11 @@
           </div>
         </form>
         <p v-if="clue.answer">Correct answer: {{  clue.answer }}</p>
+        <p v-if="clue.guesses.correct || clue.guesses.incorrect">
+          Total responses: &nbsp;
+          <i class="fas fa-check"></i> {{ clue.guesses.correct }} &nbsp;&nbsp;
+          <i class="fas fa-times"></i> {{ clue.guesses.incorrect }}
+        </p>
       </div>
     </div>
   </div>
@@ -80,6 +85,7 @@
 
   <script>
     const apiBaseUrl = 'http://localhost:7071'
+    // const apiBaseUrl = 'https://serverlesstriviatemp.azurewebsites.net'
     const axiosConfig = {}
     const sessionId = uuid.v4()
 
@@ -133,6 +139,7 @@
         .build()
 
       connection.on('newClue', newClue)
+      connection.on('newGuess', newGuess)
       connection.onclose(function() {
         console.log('disconnected')
         setTimeout(function() { startConnection(connection) }, 2000)
@@ -153,6 +160,10 @@
       const nextClue = clue.nextClue
       nextClue.guess = ''
       nextClue.guessed = false
+      nextClue.guesses = {
+        correct: 0,
+        incorrect: 0
+      }
       data.clues.unshift(nextClue)
 
       const now = new Date()
@@ -161,8 +172,17 @@
       if (data.clues.length > 20) {
         data.clues.length = 20
       }
+    }
 
-      console.log(JSON.stringify(clue, null, 2))
+    function newGuess(guess) {
+      const currentClue = (data.clues.length && data.clues[0]) || null
+      if (currentClue && currentClue.clueId === guess.clueId) {
+        if (guess.isCorrect) {
+          currentClue.guesses.correct += 1
+        } else {
+          currentClue.guesses.incorrect += 1
+        }
+      }
     }
     
     function startConnection(connection) {
