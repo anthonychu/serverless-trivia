@@ -8,9 +8,35 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"
     integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
     crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" 
+    integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+  <style>
+    .card {
+      margin-top: 8px;
+    }
+    .card.incorrect {
+      border-color: #900;
+    }
+    .card.correct {
+      border-color: #090;
+    }
+    .fa-times {
+      color: #900;
+    }
+    .fa-check {
+      color: #090;
+    }
+    .fa-angle-right, .fa-circle-notch {
+      color: #999;
+    }
+    .fas {
+      width: 24px;
+    }
+  </style>
 </head>
 
 <body>
+  <br />
   <div id="app" class="container">
     <h1>Serverless Trivia</h1>
     <hr />
@@ -23,30 +49,29 @@
       </div>
     </div>
 
-    <div v-if="currentClue.clueId">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">{{ currentClue.categoryTitle }}</h5>
-          <p class="card-text">{{ currentClue.question }}</p>
-          <form v-on:submit.prevent="submitGuess">
-            <input type="text" v-model="guessText" placeholder="" 
-              :disabled="!currentClue.clueId || nextClueSecondsRemaining <= 0" class="form-control" />
-          </form>
-        </div>
-      </div>
-      <br />
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">{{ previousClue.categoryTitle }}</h5>
-          <p class="card-text">{{ previousClue.question }}</p>
-          <form>
-            <input type="text" v-model="previousClue.guess" placeholder="" :disabled="true" class="form-control" />
-          </form>
-          <p>Correct answer: {{  previousClue.answer }}</p>
-        </div>
+    <div class="card" v-for="clue in clues" v-bind:class="{ correct: clue.guessed && clue.isCorrect === true, incorrect: clue.guessed && clue.isCorrect === false }">
+      <div class="card-body">
+        <h5 class="card-title">{{ clue.categoryTitle }}</h5>
+        <p class="card-text">{{ clue.question }}</p>
+        <form v-on:submit.prevent="submitGuess(clue)">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="basic-addon1">
+                <i class="fas fa-check fa-lg" v-if="clue.isCorrect === true"></i>
+                <i class="fas fa-times fa-lg" v-if="clue.isCorrect === false"></i>
+                <i class="fas fa-lg" v-if="!clue.guessed && !clue.submittingGuess"></i>
+                <i class="fas fa-circle-notch fa-lg fa-spin" v-if="clue.submittingGuess"></i>
+              </span>
+            </div>
+            <input type="text" v-model="clue.guess" placeholder="" :disabled="clue.answer || clue.guessed || nextClueSecondsRemaining <= 0" class="form-control" />
+          </div>
+        </form>
+        <p v-if="clue.answer">Correct answer: {{  clue.answer }}</p>
       </div>
     </div>
   </div>
+
+  <br />
 
   <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
   <script src="https://unpkg.com/@aspnet/signalr@1.0.0/dist/browser/signalr.js"></script>
@@ -59,30 +84,30 @@
     const sessionId = uuid.v4()
 
     const data = {
-      guessText: '',
-      currentClue: {},
-      previousClue: {},
       nextClueTime: new Date(),
-      nextClueSecondsRemaining: 0
+      nextClueSecondsRemaining: 0,
+      clues: []
     }
 
     const app = new Vue({
       el: '#app',
       data: data,
       methods: {
-        submitGuess: function () {
+        submitGuess: function (clue) {
           const guess = {
             sessionId: sessionId,
-            clueId: this.currentClue.clueId,
-            value: this.guessText
+            clueId: clue.clueId,
+            value: clue.guess
           }
+          clue.submittingGuess = true
+          clue.guessed = true
           return axios.post(`${apiBaseUrl}/api/SubmitGuess`, guess, axiosConfig)
             .then(function(resp) { 
-              const result = resp.data 
-              data.guessText = ''
-              alert(result.isCorrect ? 'Correct!' : 'Incorrect!')
+              const result = resp.data
+              clue.isCorrect = result.isCorrect
             })
             .catch(function() { alert('Error submitting guess') })
+            .finally(function() { clue.submittingGuess = false })
         }
       }
     })
@@ -119,10 +144,24 @@
 
     function newClue(clue) {
       data.currentClue = clue.nextClue
-      data.previousClue = clue.previousClue
-      data.previousClue.clueId = data.previousClue.PartitionKey // TODO: yuck
+
+      const previousClue = (data.clues.length && data.clues[0]) || null
+      if (previousClue && previousClue.clueId === clue.previousClue.PartitionKey /* yuck */) {
+        previousClue.answer = clue.previousClue.answer
+      }
+
+      const nextClue = clue.nextClue
+      nextClue.guess = ''
+      nextClue.guessed = false
+      data.clues.unshift(nextClue)
+
       const now = new Date()
       data.nextClueTime = new Date(now.getTime() + (data.currentClue.estimatedTimeRemaining || 0))
+      
+      if (data.clues.length > 20) {
+        data.clues.length = 20
+      }
+
       console.log(JSON.stringify(clue, null, 2))
     }
     
