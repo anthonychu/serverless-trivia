@@ -59,14 +59,17 @@ namespace ServerlessTrivia
             [SignalR(HubName = "trivia")] IAsyncCollector<SignalRMessage> signalRMessages,
             ILogger logger)
         {
-            logger.LogInformation($"*** Getting clue...");
+            logger.LogInformation($"*** Getting clues...");
             var client = System.Net.Http.HttpClientFactory.Create();
-            var responseJson = await client.GetStringAsync("http://jservice.io/api/random");
+            var responseJson = await client.GetStringAsync("http://jservice.io/api/random/?count=3");
             var response = JsonConvert.DeserializeObject<IEnumerable<JServiceResponse>>(responseJson);
+
+            // try to pick a clue with the highest "quality"
+            var responseClues = response.Select(r => r.ToClue()).OrderByDescending(c => c.CalculateQuality());
 
             var (previousClue, nextRun) = context.GetInput<(Clue, DateTime)>();
 
-            var clue = response.First().ToClue();
+            var clue = responseClues.First();
             await clues.AddAsync(clue);
 
             var now = DateTime.UtcNow;
