@@ -7,6 +7,8 @@
     <PackageReference Include="AzureAdvocates.WebJobs.Extensions.SignalRService" Version="0.2.0-alpha" />
     <PackageReference Include="F23.StringSimilarity" Version="3.0.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="1.5.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="2.1.1" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.14" />
   </ItemGroup>
   <ItemGroup>

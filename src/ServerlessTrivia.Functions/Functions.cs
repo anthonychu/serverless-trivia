@@ -3,18 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using F23.StringSimilarity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using F23.StringSimilarity;
-using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 
 namespace ServerlessTrivia
 {
@@ -60,7 +59,7 @@ namespace ServerlessTrivia
             ILogger logger)
         {
             logger.LogInformation($"*** Getting clues...");
-            var client = System.Net.Http.HttpClientFactory.Create();
+            var client = HttpClientFactoryFactory.CreateFactory().CreateClient();
             var responseJson = await client.GetStringAsync("http://jservice.io/api/random/?count=3");
             var response = JsonConvert.DeserializeObject<IEnumerable<JServiceResponse>>(responseJson);
 
