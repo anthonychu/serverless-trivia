@@ -32,6 +32,14 @@
     .fas.fa-lg {
       width: 24px;
     }
+    .slide-fade-enter-active, .slide-fade-leave-active {
+      transition: all 2s ease;
+    }
+    .slide-fade-enter, .slide-fade-leave-to {
+      height: 0px;
+      overflow-y: hidden;
+      opacity: 0;
+    }
   </style>
 </head>
 
@@ -49,31 +57,35 @@
       </div>
     </div>
 
-    <div class="card" v-for="clue in clues" v-bind:class="{ correct: clue.guessed && clue.isCorrect === true, incorrect: clue.guessed && clue.isCorrect === false }">
-      <div class="card-body">
-        <h5 class="card-title">{{ clue.categoryTitle }}</h5>
-        <p class="card-text">{{ clue.question }}</p>
-        <form v-on:submit.prevent="submitGuess(clue)">
-          <div class="input-group">
-            <div class="input-group-prepend">
-              <span class="input-group-text" id="basic-addon1">
-                <i class="fas fa-check fa-lg" v-if="clue.isCorrect === true"></i>
-                <i class="fas fa-times fa-lg" v-if="clue.isCorrect === false"></i>
-                <i class="fas fa-lg" v-if="!clue.guessed && !clue.submittingGuess"></i>
-                <i class="fas fa-circle-notch fa-lg fa-spin" v-if="clue.submittingGuess"></i>
-              </span>
+    <transition-group name="slide-fade" tag="div">
+      <div class="card" v-for="clue in clues" 
+        v-bind:class="{ correct: clue.guessed && clue.isCorrect === true, incorrect: clue.guessed && clue.isCorrect === false }"
+        v-bind:key="clue.clueId">
+        <div class="card-body">
+          <h5 class="card-title">{{ clue.categoryTitle }}</h5>
+          <p class="card-text">{{ clue.question }}</p>
+          <form v-on:submit.prevent="submitGuess(clue)">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">
+                  <i class="fas fa-check fa-lg" v-if="clue.isCorrect === true"></i>
+                  <i class="fas fa-times fa-lg" v-if="clue.isCorrect === false"></i>
+                  <i class="fas fa-lg" v-if="!clue.guessed && !clue.submittingGuess"></i>
+                  <i class="fas fa-circle-notch fa-lg fa-spin" v-if="clue.submittingGuess"></i>
+                </span>
+              </div>
+              <input type="text" v-model="clue.guess" placeholder="" :disabled="clue.answer || clue.guessed || nextClueSecondsRemaining <= 0" class="form-control" />
             </div>
-            <input type="text" v-model="clue.guess" placeholder="" :disabled="clue.answer || clue.guessed || nextClueSecondsRemaining <= 0" class="form-control" />
-          </div>
-        </form>
-        <p v-if="clue.answer">Correct answer: {{  clue.answer }}</p>
-        <p v-if="clue.guesses.correct || clue.guesses.incorrect">
-          Total responses: &nbsp;
-          <i class="fas fa-check"></i> {{ clue.guesses.correct }} &nbsp;&nbsp;
-          <i class="fas fa-times"></i> {{ clue.guesses.incorrect }}
-        </p>
+          </form>
+          <p v-if="clue.answer">Correct answer: {{  clue.answer }}</p>
+          <p v-if="clue.guesses.correct || clue.guesses.incorrect">
+            Total responses: &nbsp;
+            <i class="fas fa-check"></i> {{ clue.guesses.correct }} &nbsp;&nbsp;
+            <i class="fas fa-times"></i> {{ clue.guesses.incorrect }}
+          </p>
+        </div>
       </div>
-    </div>
+    </transition-group>
   </div>
 
   <br />
