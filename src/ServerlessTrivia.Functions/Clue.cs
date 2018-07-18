@@ -54,6 +54,11 @@ namespace ServerlessTrivia
             {
                 score -= 100;
             }
+            else if (Regex.IsMatch(Answer, @"\bseen here\b", RegexOptions.IgnoreCase))
+            {
+                // "seen here" usually indicates a visual clue
+                score -= 50;
+            }
 
             score -= Answer.Length - 16; // deduct points if too long
 
