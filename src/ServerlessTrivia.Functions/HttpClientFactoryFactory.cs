@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ServerlessTrivia
 {
-    public static class HttpClientFactoryFactory
+    internal static class HttpClientFactoryFactory
     {
         private static readonly ServiceProvider serviceProvider;
 
@@ -14,7 +14,7 @@ namespace ServerlessTrivia
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public static IHttpClientFactory CreateFactory()
+        internal static IHttpClientFactory CreateFactory()
         {
             return serviceProvider.GetService<IHttpClientFactory>();
         }

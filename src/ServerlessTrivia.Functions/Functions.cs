@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -60,11 +61,18 @@ namespace ServerlessTrivia
         {
             logger.LogInformation($"*** Getting clues...");
             var client = HttpClientFactoryFactory.CreateFactory().CreateClient();
-            var responseJson = await client.GetStringAsync("http://jservice.io/api/random/?count=3");
-            var response = JsonConvert.DeserializeObject<IEnumerable<JServiceResponse>>(responseJson);
 
-            // try to pick a clue with the highest "quality"
-            var responseClues = response.Select(r => r.ToClue()).OrderByDescending(c => c.CalculateQuality());
+            IEnumerable<JServiceResponse> responseItems = null;
+
+            using (var stream = await client.GetStreamAsync("http://jservice.io/api/random/?count=3"))
+            using (var streamReader = new StreamReader(stream))
+            {
+                var jsonTextReader = new JsonTextReader(streamReader);
+                responseItems = JsonSerializer.CreateDefault().Deserialize<IEnumerable<JServiceResponse>>(jsonTextReader);
+            }
+
+            // try to pick the clue with the highest "quality"
+            var responseClues = responseItems.Select(r => r.ToClue()).OrderByDescending(c => c.CalculateQuality());
 
             var (previousClue, nextRun) = context.GetInput<(Clue, DateTime)>();
 
@@ -160,8 +168,8 @@ namespace ServerlessTrivia
 
         [FunctionName(nameof(SignalRInfo))]
         public static IActionResult SignalRInfo(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequestMessage req, 
-            [SignalRConnectionInfo(HubName = "trivia")]AzureSignalRConnectionInfo info, 
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequestMessage req,
+            [SignalRConnectionInfo(HubName = "trivia")]AzureSignalRConnectionInfo info,
             ILogger logger)
         {
             return info != null
