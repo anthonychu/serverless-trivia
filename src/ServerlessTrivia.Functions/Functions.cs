@@ -60,7 +60,7 @@ namespace ServerlessTrivia
             ILogger logger)
         {
             logger.LogInformation($"*** Getting clues...");
-            var client = HttpClientFactoryFactory.CreateFactory().CreateClient();
+            var client = DefaultHttpClientFactory.CreateClient();
 
             IEnumerable<JServiceResponse> responseItems = null;
 
