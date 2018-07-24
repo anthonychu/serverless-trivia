@@ -47,13 +47,21 @@
   <br />
   <div id="app" class="container">
     <h1>Serverless Trivia</h1>
-    <hr />
     <div class="content">
+      <hr />
+      <div>
+        Session:
+        <i class="fas fa-check"></i> {{ sessionScore.correct }} &nbsp;&nbsp;
+        <i class="fas fa-times"></i> {{ sessionScore.incorrect }} &nbsp;&nbsp;
+        (Total: {{ sessionScore.totalClues }})
+      </div>
+      <hr />
       <div v-if="nextClueSecondsRemaining > 0">
-        Estimated time until next clue: {{ nextClueSecondsRemaining }}s
+        Estimated time until next question: {{ nextClueSecondsRemaining }}s
       </div>
       <div v-if="nextClueSecondsRemaining <= 0">
-        Next clue coming soon!
+          <i class="fas fa-spinner fa-pulse"></i> Next question coming soon!
+          <span v-if="!sessionScore.totalClues">(usually within 20 seconds...)</span>
       </div>
     </div>
 
@@ -96,15 +104,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/node-uuid/1.4.8/uuid.js"></script>
 
   <script>
-    const apiBaseUrl = 'http://localhost:7071'
-    // const apiBaseUrl = 'https://serverlesstriviatemp.azurewebsites.net'
+    //const apiBaseUrl = 'http://localhost:7071'
+    const apiBaseUrl = 'https://serverlesstriviatemp.azurewebsites.net'
     const axiosConfig = {}
     const sessionId = uuid.v4()
 
     const data = {
       nextClueTime: new Date(),
       nextClueSecondsRemaining: 0,
-      clues: []
+      clues: [],
+      sessionScore: {
+        correct: 0,
+        incorrect: 0,
+        totalClues: 0
+      }
     }
 
     const app = new Vue({
@@ -123,6 +136,11 @@
             .then(function(resp) { 
               const result = resp.data
               clue.isCorrect = result.isCorrect
+              if (clue.isCorrect) {
+                data.sessionScore.correct += 1
+              } else {
+                data.sessionScore.incorrect += 1
+              }
             })
             .catch(function() { alert('Error submitting guess') })
             .finally(function() { clue.submittingGuess = false })
@@ -180,6 +198,8 @@
 
       const now = new Date()
       data.nextClueTime = new Date(now.getTime() + (data.currentClue.estimatedTimeRemaining || 0))
+
+      data.sessionScore.totalClues += 1
       
       if (data.clues.length > 20) {
         data.clues.length = 20
