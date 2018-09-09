@@ -35,9 +35,7 @@ namespace ServerlessTrivia
                 var nextRun = context.CurrentUtcDateTime.AddSeconds(secondsBetweenClues);
 
                 var clue = await context.CallActivityAsync<Clue>(nameof(GetAndSendClue), (previousClue, nextRun));
-                logger.LogInformation(JsonConvert.SerializeObject(clue));
 
-                logger.LogInformation($"*** Next run: {nextRun.ToString()}");
                 await context.CreateTimer(nextRun, CancellationToken.None);
 
                 previousClue = clue;
@@ -169,7 +167,7 @@ namespace ServerlessTrivia
         [FunctionName(nameof(SignalRInfo))]
         public static IActionResult SignalRInfo(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequestMessage req,
-            [SignalRConnectionInfo(HubName = "trivia")]AzureSignalRConnectionInfo info,
+            [SignalRConnectionInfo(HubName = "trivia")]SignalRConnectionInfo info,
             ILogger logger)
         {
             return info != null
