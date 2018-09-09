@@ -57,7 +57,7 @@ namespace ServerlessTrivia
             [SignalR(HubName = "trivia")] IAsyncCollector<SignalRMessage> signalRMessages,
             ILogger logger)
         {
-            logger.LogInformation($"*** Getting clues...");
+            //logger.LogInformation($"*** Getting clues...");
             var client = DefaultHttpClientFactory.CreateClient();
 
             IEnumerable<JServiceResponse> responseItems = null;
