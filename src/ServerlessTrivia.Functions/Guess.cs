@@ -6,18 +6,10 @@ namespace ServerlessTrivia
     public class Guess : TableEntity
     {
         [JsonProperty("clueId")]
-        public string ClueId
-        {
-            get { return PartitionKey; }
-            set { PartitionKey = value;}
-        }
+        public string ClueId { get; set; }
         
         [JsonProperty("sessionId")]
-        public string SessionId
-        {
-            get { return RowKey; }
-            set { RowKey = value;}
-        }
+        public string SessionId { get; set; }
 
         [JsonProperty("value")]
         public string Value { get; set; }

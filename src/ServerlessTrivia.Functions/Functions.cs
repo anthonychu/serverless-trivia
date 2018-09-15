@@ -109,6 +109,9 @@ namespace ServerlessTrivia
             var l = new NormalizedLevenshtein();
             var similarity = l.Similarity(NormalizeString(clue.Answer), NormalizeString(guess.Value));
 
+            guess.PartitionKey = guess.ClueId;
+            guess.RowKey = guess.SessionId;
+
             await guesses.AddAsync(guess);
 
             var result = new
