@@ -28,6 +28,9 @@ namespace ServerlessTrivia
             set { answer = CleanUpAnswer(value); }
         }
         
+        [JsonProperty("value")]
+        public int Value { get; set; }
+
         [JsonProperty("categoryTitle")]
         public string CategoryTitle { get; set; }
 
@@ -50,7 +53,7 @@ namespace ServerlessTrivia
                 score -= 10;
             }
 
-            if(string.IsNullOrWhiteSpace(Question) || string.IsNullOrWhiteSpace(Answer))
+            if (string.IsNullOrWhiteSpace(Question) || string.IsNullOrWhiteSpace(Answer))
             {
                 score -= 100;
             }
@@ -63,6 +66,21 @@ namespace ServerlessTrivia
             if (Answer.Length > 16)
             {
                 score -= 10; // deduct points if too long
+            }
+
+            if (this.Value > 300)
+            {
+                score -= 5;
+            }
+
+            if (this.Value > 500)
+            {
+                score -= 5;
+            }
+
+            if (this.Value >= 800)
+            {
+                score -= 5;
             }
 
             return score;

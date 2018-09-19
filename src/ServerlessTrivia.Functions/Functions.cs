@@ -62,7 +62,7 @@ namespace ServerlessTrivia
 
             IEnumerable<JServiceResponse> responseItems = null;
 
-            using (var stream = await client.GetStreamAsync("http://jservice.io/api/random/?count=3"))
+            using (var stream = await client.GetStreamAsync("http://jservice.io/api/random/?count=6"))
             using (var streamReader = new StreamReader(stream))
             {
                 var jsonTextReader = new JsonTextReader(streamReader);

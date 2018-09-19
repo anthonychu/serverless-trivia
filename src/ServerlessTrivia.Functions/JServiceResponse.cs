@@ -5,6 +5,7 @@ namespace ServerlessTrivia
         public long Id { get; set; }
         public string Question { get; set; }
         public string Answer { get; set; }
+        public int? Value { get; set; }
         public JServiceResponseCategory Category { get; set; }
 
         public class JServiceResponseCategory
@@ -19,6 +20,7 @@ namespace ServerlessTrivia
                 Id = Id,
                 Question = Question,
                 Answer = Answer,
+                Value = Value ?? 600,
                 CategoryTitle = Category.Title
             };
         }
