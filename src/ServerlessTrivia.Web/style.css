@@ -1,0 +1,31 @@
+.card {
+  margin-top: 8px;
+  border-width: 4px;
+  padding: 5px;
+}
+.card.incorrect {
+  border-color: #900;
+}
+.card.correct {
+  border-color: #090;
+}
+.fa-times {
+  color: #900;
+}
+.fa-check {
+  color: #090;
+}
+.fa-angle-right, .fa-circle-notch {
+  color: #999;
+}
+.fas.fa-lg {
+  width: 24px;
+}
+.slide-fade-enter-active, .slide-fade-leave-active {
+  transition: all 2s ease;
+}
+.slide-fade-enter, .slide-fade-leave-to {
+  height: 0px;
+  overflow-y: hidden;
+  opacity: 0;
+}

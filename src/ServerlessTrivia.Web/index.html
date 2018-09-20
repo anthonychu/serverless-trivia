@@ -5,42 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Serverless Trivia</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"
-    integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
     crossorigin="anonymous" />
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" 
-    integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
-  <style>
-    .card {
-      margin-top: 8px;
-    }
-    .card.incorrect {
-      border-color: #900;
-    }
-    .card.correct {
-      border-color: #090;
-    }
-    .fa-times {
-      color: #900;
-    }
-    .fa-check {
-      color: #090;
-    }
-    .fa-angle-right, .fa-circle-notch {
-      color: #999;
-    }
-    .fas.fa-lg {
-      width: 24px;
-    }
-    .slide-fade-enter-active, .slide-fade-leave-active {
-      transition: all 2s ease;
-    }
-    .slide-fade-enter, .slide-fade-leave-to {
-      height: 0px;
-      overflow-y: hidden;
-      opacity: 0;
-    }
-  </style>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt"
+    crossorigin="anonymous">
+  <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
@@ -60,186 +29,49 @@
         Estimated time until next question: {{ nextClueSecondsRemaining }}s
       </div>
       <div v-if="nextClueSecondsRemaining <= 0">
-          <i class="fas fa-spinner fa-pulse"></i> Next question coming soon!
-          <span v-if="!sessionScore.totalClues">(usually within 20 seconds...)</span>
+        <i class="fas fa-spinner fa-pulse"></i> Next question coming soon!
+        <span v-if="!sessionScore.totalClues">(usually within 20 seconds...)</span>
       </div>
     </div>
 
     <transition-group name="slide-fade" tag="div">
-      <div class="card" v-for="clue in clues" 
-        v-bind:class="{ correct: clue.guessed && clue.isCorrect === true, incorrect: clue.guessed && clue.isCorrect === false }"
+      <div class="card" v-for="clue in clues" v-bind:class="{ correct: clue.guessed && clue.isCorrect === true, incorrect: clue.guessed && clue.isCorrect === false }"
         v-bind:key="clue.clueId">
         <div class="card-body">
-          <h5 class="card-title">{{ clue.categoryTitle }}</h5>
-          <p class="card-text">{{ clue.question }}</p>
-          <form v-on:submit.prevent="submitGuess(clue)">
-            <div class="input-group">
-              <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">
-                  <i class="fas fa-check fa-lg" v-if="clue.isCorrect === true"></i>
-                  <i class="fas fa-times fa-lg" v-if="clue.isCorrect === false"></i>
-                  <i class="fas fa-lg" v-if="!clue.guessed && !clue.submittingGuess"></i>
-                  <i class="fas fa-circle-notch fa-lg fa-spin" v-if="clue.submittingGuess"></i>
-                </span>
-              </div>
-              <input type="text" v-model="clue.guess" placeholder="" :disabled="clue.answer || clue.guessed || nextClueSecondsRemaining <= 0" class="form-control" />
-            </div>
-          </form>
-          <p v-if="clue.answer">Correct answer: {{  clue.answer }}</p>
+          <p v-if="clue.answer">Correct answer: {{ clue.answer }}</p>
           <p v-if="clue.guesses.correct || clue.guesses.incorrect">
             Total responses: &nbsp;
             <i class="fas fa-check"></i> {{ clue.guesses.correct }} &nbsp;&nbsp;
             <i class="fas fa-times"></i> {{ clue.guesses.incorrect }}
           </p>
         </div>
+        <h5 class="card-title">{{ clue.categoryTitle }}</h5>
+        <p class="card-text">{{ clue.question }}</p>
+        <form v-on:submit.prevent="submitGuess(clue)">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="basic-addon1">
+                <i class="fas fa-check fa-lg" v-if="clue.isCorrect === true"></i>
+                <i class="fas fa-times fa-lg" v-if="clue.isCorrect === false"></i>
+                <i class="fas fa-lg" v-if="!clue.guessed && !clue.submittingGuess"></i>
+                <i class="fas fa-circle-notch fa-lg fa-spin" v-if="clue.submittingGuess"></i>
+              </span>
+            </div>
+            <input type="text" v-model="clue.guess" placeholder="" :disabled="clue.answer || clue.guessed || nextClueSecondsRemaining <= 0"
+              class="form-control" />
+          </div>
+        </form>
       </div>
     </transition-group>
   </div>
 
   <br />
 
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@aspnet/signalr@1.0.3/dist/browser/signalr.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios@0.18.0/dist/axios.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/node-uuid/1.4.8/uuid.js"></script>
-
-  <script>
-    //const apiBaseUrl = 'http://localhost:7071'
-    const apiBaseUrl = 'https://serverless-trivia.azurewebsites.net'
-    const axiosConfig = {}
-    const sessionId = uuid.v4()
-
-    const data = {
-      nextClueTime: new Date(),
-      nextClueSecondsRemaining: 0,
-      clues: [],
-      sessionScore: {
-        correct: 0,
-        incorrect: 0,
-        totalClues: 0
-      }
-    }
-
-    const app = new Vue({
-      el: '#app',
-      data: data,
-      methods: {
-        submitGuess: function (clue) {
-          const guess = {
-            sessionId: sessionId,
-            clueId: clue.clueId,
-            value: clue.guess
-          }
-          clue.submittingGuess = true
-          clue.guessed = true
-          return axios.post(`${apiBaseUrl}/api/SubmitGuess`, guess, axiosConfig)
-            .then(function(resp) { 
-              const result = resp.data
-              clue.isCorrect = result.isCorrect
-              if (clue.isCorrect) {
-                data.sessionScore.correct += 1
-              } else {
-                data.sessionScore.incorrect += 1
-              }
-            })
-            .catch(function() { alert('Error submitting guess') })
-            .finally(function() { clue.submittingGuess = false })
-        }
-      }
-    })
-
-    getConnectionInfo().then(function(info) {
-      let accessToken = info.accessToken
-      const options = {
-        accessTokenFactory: function() {
-          if (accessToken) {
-            const _accessToken = accessToken
-            accessToken = null
-            return _accessToken
-          } else {
-            return getConnectionInfo().then(function(info) {
-              return info.accessToken
-            })
-          }
-        }
-      }
-
-      const connection = new signalR.HubConnectionBuilder()
-        .withUrl(info.url, options)
-        .build()
-
-      connection.on('newClue', newClue)
-      connection.on('newGuess', newGuess)
-      connection.onclose(function() {
-        console.log('disconnected')
-        setTimeout(function() { startConnection(connection) }, 2000)
-      })
-
-      startConnection(connection)
-      
-    }).catch(console.error)
-
-    function newClue(clue) {
-      data.currentClue = clue.nextClue
-
-      const previousClue = (data.clues.length && data.clues[0]) || null
-      if (previousClue && previousClue.clueId === clue.previousClue.PartitionKey /* yuck */) {
-        previousClue.answer = clue.previousClue.answer
-      }
-
-      const nextClue = clue.nextClue
-      nextClue.guess = ''
-      nextClue.guessed = false
-      nextClue.guesses = {
-        correct: 0,
-        incorrect: 0
-      }
-      data.clues.unshift(nextClue)
-
-      const now = new Date()
-      data.nextClueTime = new Date(now.getTime() + (data.currentClue.estimatedTimeRemaining || 0))
-
-      data.sessionScore.totalClues += 1
-      
-      if (data.clues.length > 20) {
-        data.clues.length = 20
-      }
-    }
-
-    function newGuess(guess) {
-      const currentClue = (data.clues.length && data.clues[0]) || null
-      if (currentClue && currentClue.clueId === guess.clueId) {
-        if (guess.isCorrect) {
-          currentClue.guesses.correct += 1
-        } else {
-          currentClue.guesses.incorrect += 1
-        }
-      }
-    }
-    
-    function startConnection(connection) {
-      console.log('connecting...')
-      connection.start()
-        .then(function() { console.log('connected!') })
-        .catch(function(err) {
-          console.error(err)
-          setTimeout(function() { startConnection(connection) }, 2000)
-        })
-    }
-
-    function getConnectionInfo() {
-      return axios.post(`${apiBaseUrl}/api/SignalRInfo`, null, axiosConfig)
-        .then(function(resp) { return resp.data })
-        .catch(function() { return {} })
-    }
-
-    function calculateTimeRemaining() {
-      const now = new Date()
-      const diff =  Math.round((data.nextClueTime.getTime() - now.getTime()) / 1000.0)
-      data.nextClueSecondsRemaining = diff > 0 ? diff : 0
-    }
-    setInterval(calculateTimeRemaining, 200)
-  </script>
+  <script src="./app.js"></script>
 </body>
 
 </html>
