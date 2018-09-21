@@ -19,10 +19,24 @@
     <div class="content">
       <hr />
       <div>
-        Session:
+        Total questions: {{ sessionScore.totalClues }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <i class="fas fa-user-alt"></i> Me &nbsp;
         <i class="fas fa-check"></i> {{ sessionScore.correct }} &nbsp;&nbsp;
-        <i class="fas fa-times"></i> {{ sessionScore.incorrect }} &nbsp;&nbsp;
-        (Total: {{ sessionScore.totalClues }})
+        <i class="fas fa-times"></i> {{ sessionScore.incorrect }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <i class="fas fa-users"></i> Everyone &nbsp;
+        <i class="fas fa-check"></i> {{ allSessionScore.correct }} &nbsp;&nbsp;
+        <i class="fas fa-times"></i> {{ allSessionScore.incorrect }} &nbsp;&nbsp;
+      </div>
+      <hr />
+      <div v-if="previous.correctAnswer">
+        Correct answer to previous question:  &nbsp;&nbsp;
+        <i class="fas fa-check" v-if="previous.guessed && previous.isCorrect"></i>
+        <i class="fas fa-times" v-if="previous.guessed && !previous.isCorrect"></i>
+        "{{ previous.correctAnswer }}"
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <i class="fas fa-users"></i> Everyone &nbsp;
+        <i class="fas fa-check"></i> {{ previous.everyoneCorrect }} &nbsp;&nbsp;
+        <i class="fas fa-times"></i> {{ previous.everyoneIncorrect }}
       </div>
       <hr />
       <div v-if="nextClueSecondsRemaining > 0">
@@ -38,6 +52,22 @@
       <div class="card" v-for="clue in clues" v-bind:class="{ correct: clue.guessed && clue.isCorrect === true, incorrect: clue.guessed && clue.isCorrect === false }"
         v-bind:key="clue.clueId">
         <div class="card-body">
+          <h5 class="card-title">{{ clue.categoryTitle }}</h5>
+          <p class="card-text">{{ clue.question }}</p>
+          <form v-on:submit.prevent="submitGuess(clue)">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">
+                  <i class="fas fa-check fa-lg" v-if="clue.isCorrect === true"></i>
+                  <i class="fas fa-times fa-lg" v-if="clue.isCorrect === false"></i>
+                  <i class="fas fa-lg" v-if="!clue.guessed && !clue.submittingGuess"></i>
+                  <i class="fas fa-circle-notch fa-lg fa-spin" v-if="clue.submittingGuess"></i>
+                </span>
+              </div>
+              <input type="text" v-model="clue.guess" placeholder="" :disabled="clue.answer || clue.guessed || nextClueSecondsRemaining <= 0"
+                class="form-control" />
+            </div>
+          </form>
           <p v-if="clue.answer">Correct answer: {{ clue.answer }}</p>
           <p v-if="clue.guesses.correct || clue.guesses.incorrect">
             Total responses: &nbsp;
@@ -45,25 +75,12 @@
             <i class="fas fa-times"></i> {{ clue.guesses.incorrect }}
           </p>
         </div>
-        <h5 class="card-title">{{ clue.categoryTitle }}</h5>
-        <p class="card-text">{{ clue.question }}</p>
-        <form v-on:submit.prevent="submitGuess(clue)">
-          <div class="input-group">
-            <div class="input-group-prepend">
-              <span class="input-group-text" id="basic-addon1">
-                <i class="fas fa-check fa-lg" v-if="clue.isCorrect === true"></i>
-                <i class="fas fa-times fa-lg" v-if="clue.isCorrect === false"></i>
-                <i class="fas fa-lg" v-if="!clue.guessed && !clue.submittingGuess"></i>
-                <i class="fas fa-circle-notch fa-lg fa-spin" v-if="clue.submittingGuess"></i>
-              </span>
-            </div>
-            <input type="text" v-model="clue.guess" placeholder="" :disabled="clue.answer || clue.guessed || nextClueSecondsRemaining <= 0"
-              class="form-control" />
-          </div>
-        </form>
       </div>
     </transition-group>
+    <hr />
+    <small class="text-muted">Content pulled from <a href="http://j-archive.com/">J!Archive</a> via <a href="http://jservice.io/">jService</a>. &copy; Jeopardy Productions, Inc. Not associated with Jeopardy Productions, Inc. Built with <a href="https://azure.microsoft.com/services/functions/?WT.mc_id=ignite-serverlesstrivia-antchu">Azure Functions</a> and <a href="https://azure.microsoft.com/services/signalr-service/?WT.mc_id=ignite-serverlesstrivia-antchu">SignalR Service</a>.</small>
   </div>
+
 
   <br />
 

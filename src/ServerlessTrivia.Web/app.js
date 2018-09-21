@@ -11,6 +11,17 @@ const data = {
     correct: 0,
     incorrect: 0,
     totalClues: 0
+  },
+  allSessionScore: {
+    correct: 0,
+    incorrect: 0
+  },
+  previous: {
+    correctAnswer: '',
+    isCorrect: false,
+    everyoneCorrect: 0,
+    everyoneIncorrect: 0,
+    guessed: false
   }
 }
 
@@ -79,6 +90,11 @@ function newClue(clue) {
   const previousClue = (data.clues.length && data.clues[0]) || null
   if (previousClue && previousClue.clueId === clue.previousClue.PartitionKey /* yuck */) {
     previousClue.answer = clue.previousClue.answer
+    data.previous.correctAnswer = previousClue.answer
+    data.previous.everyoneCorrect = previousClue.guesses.correct
+    data.previous.everyoneIncorrect = previousClue.guesses.incorrect
+    data.previous.isCorrect = previousClue.isCorrect
+    data.previous.guessed = previousClue.guessed
   }
 
   const nextClue = clue.nextClue
@@ -105,9 +121,12 @@ function newGuess(guess) {
   if (currentClue && currentClue.clueId === guess.clueId) {
     if (guess.isCorrect) {
       currentClue.guesses.correct += 1
+      data.allSessionScore.correct += 1
     } else {
       currentClue.guesses.incorrect += 1
+      data.allSessionScore.incorrect += 1
     }
+
   }
 }
 
